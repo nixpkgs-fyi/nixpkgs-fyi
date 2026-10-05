@@ -85,3 +85,4 @@ tr.single, tr.team-only { background: var(--yellow-bg); }
 .facts dd { margin: 0; overflow-wrap: anywhere; }
 .pager { display: flex; gap: 1.5em; justify-content: center; margin-top: 1.2em; color: var(--muted); }
 .ext { font-size: 0.85em; }
+footer { padding: 1.2em 1.5em; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9em; text-align: center; }

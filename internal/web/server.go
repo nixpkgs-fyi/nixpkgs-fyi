@@ -27,8 +27,9 @@ import (
 var assets embed.FS
 
 type server struct {
-	path  string
-	pages map[string]*template.Template
+	path   string
+	banner bool
+	pages  map[string]*template.Template
 
 	mu    sync.Mutex
 	snap  *snapshot
@@ -61,8 +62,16 @@ var (
 	errNotFound = errors.New("not found")
 )
 
-func Serve(ctx context.Context, listen, path string) error {
-	s := &server{path: path, pages: map[string]*template.Template{}}
+// Options configure Serve.
+type Options struct {
+	Listen string // address to listen on
+	DB     string // database written by `nixmaint update`
+	Banner bool   // show the "built with ❤️ by pinpox" footer
+}
+
+func Serve(ctx context.Context, o Options) error {
+	listen, path := o.Listen, o.DB
+	s := &server{path: path, banner: o.Banner, pages: map[string]*template.Template{}}
 	for _, page := range []string{"packages", "package", "maintainers", "teams", "error"} {
 		t, err := template.New("layout.html").Funcs(funcs).ParseFS(assets, "templates/layout.html", "templates/partials.html", "templates/"+page+".html")
 		if err != nil {
@@ -198,11 +207,12 @@ func queryCounts(db *sql.DB, query string, args ...any) ([]countRow, error) {
 }
 
 type page struct {
-	Title string
-	Nav   string // highlighted navigation entry
-	Snap  *snapshot
-	Query url.Values
-	Data  any
+	Title  string
+	Nav    string // highlighted navigation entry
+	Banner bool
+	Snap   *snapshot
+	Query  url.Values
+	Data   any
 }
 
 // handlerFunc fills p and returns the name of the template to render.
@@ -210,7 +220,7 @@ type handlerFunc func(r *http.Request, snap *snapshot, p *page) (string, error)
 
 func (s *server) handle(h handlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		p := &page{Query: r.URL.Query()}
+		p := &page{Query: r.URL.Query(), Banner: s.banner}
 		snap, err := s.current()
 		name := "error"
 		if err == nil {

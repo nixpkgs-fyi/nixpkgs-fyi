@@ -45,6 +45,12 @@ in
       description = "Address the web interface listens on. Put a reverse proxy in front for public access.";
     };
 
+    banner = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Show the \"Built with ❤️ by pinpox\" footer linking to the source code.";
+    };
+
     update = {
       frequency = lib.mkOption {
         type = lib.types.str;
@@ -129,6 +135,7 @@ in
       environment = {
         NIXMAINT_DB = db;
         NIXMAINT_LISTEN = cfg.listen;
+        NIXMAINT_BANNER = lib.boolToString cfg.banner;
       };
       serviceConfig = hardening // {
         ExecStart = "${exe} serve";

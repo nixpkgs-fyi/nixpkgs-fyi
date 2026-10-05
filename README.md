@@ -21,6 +21,7 @@ Configuration is done with environment variables (`nixmaint help`):
 |-----------------------|---------------------------|
 | `NIXMAINT_DB`         | `nixpkgs.sqlite`          |
 | `NIXMAINT_LISTEN`     | `127.0.0.1:8787`          |
+| `NIXMAINT_BANNER`     | `true` (credits footer)   |
 | `NIXMAINT_CHANNEL`    | `nixos-unstable`          |
 | `NIXMAINT_SYSTEM`     | `x86_64-linux`            |
 | `NIXMAINT_WORKERS`    | number of CPUs, at most 8 |

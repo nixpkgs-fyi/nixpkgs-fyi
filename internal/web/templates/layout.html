@@ -27,5 +27,11 @@
 <main>
 {{template "content" .}}
 </main>
+{{if .Banner}}
+<footer>
+  Built with ❤️ by <a href="https://github.com/pinpox">pinpox</a> ·
+  <a href="https://github.com/pinpox/nixpkgs-maintenance">source on GitHub</a>
+</footer>
+{{end}}
 </body>
 </html>

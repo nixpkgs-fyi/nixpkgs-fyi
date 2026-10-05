@@ -28,6 +28,7 @@ Configuration (environment variables):
 
   serve:
   NIXMAINT_LISTEN          address to listen on (default: 127.0.0.1:8787)
+  NIXMAINT_BANNER          "0" or "false" hides the "built with ❤️ by pinpox" footer (default: true)
 
   update:
   NIXMAINT_CHANNEL         channel whose current revision is evaluated (default: nixos-unstable)
@@ -57,7 +58,7 @@ func main() {
 	case "update":
 		err = runUpdate(ctx)
 	case "serve":
-		err = web.Serve(ctx, env("NIXMAINT_LISTEN", "127.0.0.1:8787"), env("NIXMAINT_DB", "nixpkgs.sqlite"))
+		err = runServe(ctx)
 	case "-h", "-help", "--help", "help":
 		fmt.Print(usage)
 		return
@@ -87,13 +88,25 @@ func runUpdate(ctx context.Context) error {
 	if o.MaxMemory, err = envInt("NIXMAINT_MAX_MEMORY", "4096"); err != nil {
 		return err
 	}
-	if o.Force, err = envBool("NIXMAINT_FORCE"); err != nil {
+	if o.Force, err = envBool("NIXMAINT_FORCE", "false"); err != nil {
 		return err
 	}
 	if (o.Nixpkgs == "") != (o.Rev == "") {
 		return fmt.Errorf("NIXMAINT_NIXPKGS and NIXMAINT_REV must be set together")
 	}
 	return update.Run(ctx, o)
+}
+
+func runServe(ctx context.Context) error {
+	banner, err := envBool("NIXMAINT_BANNER", "true")
+	if err != nil {
+		return err
+	}
+	return web.Serve(ctx, web.Options{
+		Listen: env("NIXMAINT_LISTEN", "127.0.0.1:8787"),
+		DB:     env("NIXMAINT_DB", "nixpkgs.sqlite"),
+		Banner: banner,
+	})
 }
 
 // env returns the variable's value, or def if it is unset or empty.
@@ -113,8 +126,8 @@ func envInt(name, def string) (int, error) {
 	return n, nil
 }
 
-func envBool(name string) (bool, error) {
-	v := env(name, "false")
+func envBool(name, def string) (bool, error) {
+	v := env(name, def)
 	b, err := strconv.ParseBool(v)
 	if err != nil {
 		return false, fmt.Errorf("%s=%q: want true or false", name, v)
