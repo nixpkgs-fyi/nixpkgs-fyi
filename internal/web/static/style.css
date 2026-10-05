@@ -1,0 +1,87 @@
+/* Colors follow the browser preference; the header switch (theme.js) can
+   force one scheme by setting data-theme on <html>. */
+:root {
+  color-scheme: light dark;
+  --fg: light-dark(#1d2330, #e4e7ec);
+  --muted: light-dark(#667085, #98a2b3);
+  --bg: light-dark(#fff, #14171f);
+  --line: light-dark(#e4e7ec, #2c3240);
+  --accent: light-dark(#1f3c8a, #8ba4f0);
+  --red: light-dark(#c0362c, #f97066);
+  --red-bg: light-dark(#fdecea, #3b1a17);
+  --orange: light-dark(#b54708, #fdb022);
+  --orange-bg: light-dark(#fef0c7, #3a2a0c);
+  --yellow-bg: light-dark(#fffbe6, #2c2810);
+  --grey-bg: light-dark(#f2f4f7, #222733);
+}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+.theme-switch { background: none; color: var(--muted); border-color: var(--line); margin-left: 1em; font-size: 0.9em; }
+.theme-switch:hover { color: var(--fg); }
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.45 system-ui, sans-serif; color: var(--fg); background: var(--bg); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-size: 0.92em; }
+small { color: var(--muted); font-weight: normal; }
+
+header { display: flex; flex-wrap: wrap; gap: 0.5em 2em; align-items: baseline; justify-content: space-between;
+  padding: 0.7em 1.5em; border-bottom: 1px solid var(--line); }
+nav a { margin-right: 1.2em; color: var(--fg); }
+nav a.active { font-weight: 600; border-bottom: 2px solid var(--accent); }
+nav .brand { font-weight: 700; }
+.snapshot { color: var(--muted); font-size: 0.9em; }
+main { padding: 1em 1.5em 3em; }
+h1 { font-size: 1.5em; margin: 0.4em 0; }
+h2 { font-size: 1.15em; margin-top: 1.8em; }
+
+.stats { display: flex; flex-wrap: wrap; gap: 0.6em; margin-bottom: 1em; }
+.stat { display: flex; flex-direction: column; padding: 0.5em 0.9em; border: 1px solid var(--line); border-radius: 6px;
+  color: var(--muted); min-width: 9em; }
+.stat b { font-size: 1.35em; color: var(--fg); }
+.stat.unmaintained b { color: var(--red); }
+.stat.single b, .stat.team-only b { color: var(--orange); }
+.stat:hover { text-decoration: none; border-color: var(--accent); }
+
+.filters { display: flex; flex-wrap: wrap; gap: 0.6em 1em; align-items: center; margin: 1em 0 0.5em; }
+.filters input[type=search] { min-width: 20em; }
+.filters label { color: var(--muted); }
+input, select, button { font: inherit; padding: 0.25em 0.45em; color: var(--fg); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 4px; }
+button { cursor: pointer; background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.count, .note { color: var(--muted); }
+.warning { color: var(--red); font-weight: 600; }
+.lead { font-size: 1.1em; }
+.person p { color: var(--muted); }
+
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; vertical-align: top; padding: 0.35em 0.6em; border-bottom: 1px solid var(--line); }
+th { position: sticky; top: 0; background: var(--bg); white-space: nowrap; }
+th a { color: var(--fg); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.version, .version { color: var(--muted); }
+td.empty { color: var(--muted); text-align: center; padding: 2em; }
+/* Package list rows are always two lines high: name and description on the
+   left, every other cell clipped to one line (full text in the tooltip). */
+.clip { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.clip.attr { max-width: 26em; font-weight: 500; }
+.clip.desc { color: var(--muted); font-size: 0.9em; max-width: 34em; height: 1.45em; }
+td.version .clip { max-width: 8em; }
+.clip.people { max-width: 16em; }
+.clip.teams { max-width: 10em; }
+table.packages td { white-space: nowrap; }
+tr.unmaintained { background: var(--red-bg); }
+tr.single, tr.team-only { background: var(--yellow-bg); }
+
+.badge { display: inline-block; padding: 0 0.45em; border-radius: 3px; font-size: 0.82em; white-space: nowrap;
+  background: var(--grey-bg); color: var(--muted); }
+.badge.unmaintained { background: var(--red); color: var(--bg); }
+.badge.single, .badge.team-only { background: var(--orange-bg); color: var(--orange); }
+.badge.broken, .badge.insecure { background: var(--grey-bg); color: var(--red); }
+.badge.maintained { display: none; }
+
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.25em 1.2em; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.pager { display: flex; gap: 1.5em; justify-content: center; margin-top: 1.2em; color: var(--muted); }
+.ext { font-size: 0.85em; }

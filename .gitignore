@@ -1,0 +1,5 @@
+result
+result-*
+*.sqlite
+*.sqlite.tmp
+data/

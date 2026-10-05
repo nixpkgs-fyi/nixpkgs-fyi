@@ -1,0 +1,90 @@
+{{define "content"}}{{$d := .Data}}{{$q := .Query}}{{$s := .Snap.Stats}}
+<section class="stats">
+  <a class="stat" href="/?sort=attr"><b>{{num $s.Packages}}</b>packages</a>
+  <a class="stat unmaintained" href="/?status=unmaintained&amp;sort=rdeps_transitive&amp;dir=desc"><b>{{num $s.Unmaintained}}</b>unmaintained ({{pct $s.Unmaintained $s.Packages}})</a>
+  <a class="stat single" href="/?status=single&amp;sort=rdeps_transitive&amp;dir=desc"><b>{{num $s.Single}}</b>single maintainer ({{pct $s.Single $s.Packages}})</a>
+  <a class="stat team-only" href="/?status=team-only&amp;sort=rdeps_transitive&amp;dir=desc"><b>{{num $s.TeamOnly}}</b>team only ({{pct $s.TeamOnly $s.Packages}})</a>
+  <a class="stat broken" href="/?broken=1"><b>{{num $s.Broken}}</b>broken</a>
+  <a class="stat" href="/maintainers"><b>{{num $s.Maintainers}}</b>maintainers</a>
+  <a class="stat" href="/teams"><b>{{num $s.Teams}}</b>teams</a>
+  <a class="stat" href="/?hooks=only" title="Built with makeSetupHook; hidden from the counts and list by default"><b>{{num $s.SetupHooks}}</b>setup hooks (hidden)</a>
+</section>
+
+{{with $d.Maintainer}}
+<section class="person">
+  <h1>{{.Handle}}{{if and .Name (ne .Name .Handle)}} <small>{{.Name}}</small>{{end}}</h1>
+  <p>
+    {{if .GitHub}}<a href="https://github.com/{{.GitHub}}">github.com/{{.GitHub}}</a> ·{{end}}
+    maintains {{num .Packages}} packages ({{num .Direct}} directly), sole maintainer of {{num .Sole}}, member of {{.Teams}} teams
+  </p>
+</section>
+{{end}}
+
+<form class="filters" method="get" action="/">
+  <input type="search" name="q" value='{{$q.Get "q"}}' placeholder="Search attribute or description" autofocus>
+  <label>Status
+    <select name="status">
+      {{$st := $q.Get "status"}}
+      <option value="">all</option>
+      <option value="unmaintained"{{if eq $st "unmaintained"}} selected{{end}}>unmaintained (no maintainer, no team)</option>
+      <option value="single"{{if eq $st "single"}} selected{{end}}>single maintainer</option>
+      <option value="team-only"{{if eq $st "team-only"}} selected{{end}}>maintained by teams only</option>
+      <option value="maintained"{{if eq $st "maintained"}} selected{{end}}>maintained</option>
+    </select>
+  </label>
+  <label>Package set
+    <select name="set">
+      {{$set := $q.Get "set"}}
+      <option value="">all</option>
+      {{range .Snap.Sets}}<option value="{{.Name}}"{{if eq $set .Name}} selected{{end}}>{{.Name}} ({{num .Count}})</option>{{end}}
+    </select>
+  </label>
+  <label>Broken
+    <select name="broken">
+      {{$b := $q.Get "broken"}}
+      <option value="">any</option>
+      <option value="1"{{if eq $b "1"}} selected{{end}}>only broken</option>
+      <option value="0"{{if eq $b "0"}} selected{{end}}>not broken</option>
+    </select>
+  </label>
+  <label>Setup hooks
+    <select name="hooks">
+      {{$h := $q.Get "hooks"}}
+      <option value="">hide</option>
+      <option value="show"{{if eq $h "show"}} selected{{end}}>show</option>
+      <option value="only"{{if eq $h "only"}} selected{{end}}>only setup hooks</option>
+    </select>
+  </label>
+  <label>Maintainer <input type="text" name="maintainer" value='{{$q.Get "maintainer"}}' placeholder="GitHub handle" size="14"></label>
+  {{with $q.Get "team"}}<label>Team <input type="text" name="team" value="{{.}}" size="12"></label>{{end}}
+  <input type="hidden" name="sort" value="{{$d.Sort}}">
+  <input type="hidden" name="dir" value="{{$d.Dir}}">
+  <button type="submit">Filter</button>
+  <a href="/">Reset</a>
+</form>
+
+<p class="count">{{num $d.Total}} packages{{if gt $d.Pager.Pages 1}} · page {{$d.Pager.Page}} of {{num $d.Pager.Pages}}{{end}}</p>
+
+<table class="packages">
+<thead>
+<tr>
+  <th><a href="{{sortLink $q $d.Sort $d.Dir "attr" "asc"}}">Package{{sortMark $d.Sort $d.Dir "attr"}}</a></th>
+  <th><a href="{{sortLink $q $d.Sort $d.Dir "version" "asc"}}">Version{{sortMark $d.Sort $d.Dir "version"}}</a></th>
+  <th><a href="{{sortLink $q $d.Sort $d.Dir "maintainers" "asc"}}">Maintainers{{sortMark $d.Sort $d.Dir "maintainers"}}</a></th>
+  <th class="num"><a href="{{sortLink $q $d.Sort $d.Dir "maintainer_count" "asc"}}" title="number of maintainers (including team members)">#{{sortMark $d.Sort $d.Dir "maintainer_count"}}</a></th>
+  <th>Teams</th>
+  <th class="num"><a href="{{sortLink $q $d.Sort $d.Dir "deps" "desc"}}" title="direct dependencies">Deps{{sortMark $d.Sort $d.Dir "deps"}}</a></th>
+  <th class="num"><a href="{{sortLink $q $d.Sort $d.Dir "rdeps" "desc"}}" title="packages depending on this one directly">Used by{{sortMark $d.Sort $d.Dir "rdeps"}}</a></th>
+  <th class="num"><a href="{{sortLink $q $d.Sort $d.Dir "rdeps_transitive" "desc"}}" title="packages depending on this one directly or indirectly">Used by (transitive){{sortMark $d.Sort $d.Dir "rdeps_transitive"}}</a></th>
+  <th>Status</th>
+</tr>
+</thead>
+<tbody>
+{{range $d.Rows}}{{template "pkgrow" .}}{{else}}
+<tr><td colspan="9" class="empty">No packages match.</td></tr>
+{{end}}
+</tbody>
+</table>
+
+{{template "pager" $d.Pager}}
+{{end}}

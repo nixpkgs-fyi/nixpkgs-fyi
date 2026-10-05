@@ -1,0 +1,16 @@
+{{define "content"}}
+<h1>Teams</h1>
+<table>
+<thead><tr><th>Team</th><th>Scope</th><th>Members</th><th class="num">Packages</th></tr></thead>
+<tbody>
+{{range .Data}}
+<tr class="{{if not .Members}}unmaintained{{end}}">
+  <td><a href="/{{q nil "team" .ShortName}}">{{.ShortName}}</a>{{with .GitHub}} <a class="ext" href="https://github.com/orgs/NixOS/teams/{{.}}" title="GitHub team">↗</a>{{end}}</td>
+  <td>{{.Scope}}</td>
+  <td>{{range $i, $m := .Members}}{{if $i}}, {{end}}<a href="/{{q nil "maintainer" $m}}">{{$m}}</a>{{else}}<span class="badge unmaintained">no members</span>{{end}}</td>
+  <td class="num">{{num .Packages}}</td>
+</tr>
+{{end}}
+</tbody>
+</table>
+{{end}}

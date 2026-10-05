@@ -1,0 +1,45 @@
+{{define "content"}}{{$d := .Data}}{{$q := .Query}}
+<h1>Maintainers</h1>
+<p class="note">
+  <em>Packages</em> counts every package a maintainer is responsible for, including through teams.
+  <em>Sole</em> counts packages that would become unmaintained if this maintainer left.
+</p>
+
+<form class="filters" method="get" action="/maintainers">
+  <input type="search" name="q" value='{{$q.Get "q"}}' placeholder="Search handle or name" autofocus>
+  <input type="hidden" name="sort" value="{{$d.Sort}}">
+  <input type="hidden" name="dir" value="{{$d.Dir}}">
+  <button type="submit">Filter</button>
+</form>
+
+<p class="count">{{num $d.Total}} maintainers{{if gt $d.Pager.Pages 1}} · page {{$d.Pager.Page}} of {{num $d.Pager.Pages}}{{end}}</p>
+
+<table>
+<thead>
+<tr>
+  <th><a href="{{sortLink $q $d.Sort $d.Dir "handle" "asc"}}">Handle{{sortMark $d.Sort $d.Dir "handle"}}</a></th>
+  <th>Name</th>
+  <th class="num"><a href="{{sortLink $q $d.Sort $d.Dir "packages" "desc"}}">Packages{{sortMark $d.Sort $d.Dir "packages"}}</a></th>
+  <th class="num"><a href="{{sortLink $q $d.Sort $d.Dir "direct" "desc"}}">Direct{{sortMark $d.Sort $d.Dir "direct"}}</a></th>
+  <th class="num"><a href="{{sortLink $q $d.Sort $d.Dir "sole" "desc"}}">Sole{{sortMark $d.Sort $d.Dir "sole"}}</a></th>
+  <th class="num"><a href="{{sortLink $q $d.Sort $d.Dir "teams" "desc"}}">Teams{{sortMark $d.Sort $d.Dir "teams"}}</a></th>
+</tr>
+</thead>
+<tbody>
+{{range $d.Rows}}
+<tr>
+  <td><a href="/{{q nil "maintainer" .Handle}}">{{.Handle}}</a>{{with .GitHub}} <a class="ext" href="https://github.com/{{.}}" title="GitHub profile">↗</a>{{end}}</td>
+  <td>{{.Name}}</td>
+  <td class="num">{{num .Packages}}</td>
+  <td class="num">{{num .Direct}}</td>
+  <td class="num">{{if .Sole}}<a href="/{{q nil "maintainer" .Handle "status" "single"}}">{{num .Sole}}</a>{{else}}0{{end}}</td>
+  <td class="num">{{.Teams}}</td>
+</tr>
+{{else}}
+<tr><td colspan="6" class="empty">No maintainers match.</td></tr>
+{{end}}
+</tbody>
+</table>
+
+{{template "pager" $d.Pager}}
+{{end}}

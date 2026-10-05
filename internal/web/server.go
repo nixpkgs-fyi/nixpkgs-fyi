@@ -1,0 +1,247 @@
+// Package web serves a read-only HTML view of the database written by
+// `nixmaint update`.
+package web
+
+import (
+	"bytes"
+	"context"
+	"database/sql"
+	"embed"
+	"errors"
+	"fmt"
+	"html/template"
+	"io/fs"
+	"log"
+	"net/http"
+	"net/url"
+	"os"
+	"strconv"
+	"sync"
+	"syscall"
+	"time"
+
+	_ "modernc.org/sqlite"
+)
+
+//go:embed templates/*.html static/*
+var assets embed.FS
+
+type server struct {
+	path  string
+	pages map[string]*template.Template
+
+	mu    sync.Mutex
+	snap  *snapshot
+	stamp string // mtime + inode of the database file behind snap
+}
+
+// snapshot is one generated database plus values computed once per file.
+type snapshot struct {
+	DB    *sql.DB
+	Meta  map[string]string
+	Stats stats
+	Sets  []countRow // package sets by size
+}
+
+type stats struct {
+	Packages, Unmaintained, TeamOnly, Single, Broken, Maintainers, Teams int
+	SetupHooks                                                           int // not included in the other counts
+}
+
+type countRow struct {
+	Name  string
+	Count int
+}
+
+// defaultView is where a bare "/" leads.
+const defaultView = "/?set=top-level&status=unmaintained&sort=rdeps_transitive&dir=desc"
+
+var (
+	errNoData   = errors.New("no database yet")
+	errNotFound = errors.New("not found")
+)
+
+func Serve(ctx context.Context, listen, path string) error {
+	s := &server{path: path, pages: map[string]*template.Template{}}
+	for _, page := range []string{"packages", "package", "maintainers", "teams", "error"} {
+		t, err := template.New("layout.html").Funcs(funcs).ParseFS(assets, "templates/layout.html", "templates/partials.html", "templates/"+page+".html")
+		if err != nil {
+			return err
+		}
+		s.pages[page] = t
+	}
+	static, _ := fs.Sub(assets, "static")
+
+	mux := http.NewServeMux()
+	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServerFS(static)))
+	packages := s.handle(packagesPage)
+	// The landing view: unmaintained top-level packages, most depended-on
+	// first. A redirect (instead of implicit defaults) keeps every filter,
+	// including "all", expressible in the URL.
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.RawQuery == "" {
+			http.Redirect(w, r, defaultView, http.StatusFound)
+			return
+		}
+		packages(w, r)
+	})
+	mux.HandleFunc("GET /package/{attr}", s.handle(packagePage))
+	mux.HandleFunc("GET /maintainers", s.handle(maintainersPage))
+	mux.HandleFunc("GET /teams", s.handle(teamsPage))
+
+	srv := &http.Server{Addr: listen, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+	go func() {
+		<-ctx.Done()
+		shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(shutdown)
+	}()
+	log.Printf("serving %s on http://%s", path, listen)
+	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	return nil
+}
+
+// current returns the snapshot of the database file, reopening it when
+// `nixmaint update` has atomically replaced the file. Queries still running on
+// the previous handle finish before it is closed.
+func (s *server) current() (*snapshot, error) {
+	fi, err := os.Stat(s.path)
+	if err != nil {
+		return nil, errNoData
+	}
+	stamp := fmt.Sprint(fi.ModTime().UnixNano())
+	if st, ok := fi.Sys().(*syscall.Stat_t); ok {
+		stamp += "-" + strconv.FormatUint(st.Ino, 10)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.snap != nil && s.stamp == stamp {
+		return s.snap, nil
+	}
+	snap, err := openSnapshot(s.path)
+	if err != nil {
+		return nil, err
+	}
+	if s.snap != nil {
+		go s.snap.DB.Close()
+	}
+	log.Printf("opened %s (rev %s, generated %s)", s.path, snap.Meta["rev"], snap.Meta["generated_at"])
+	s.snap, s.stamp = snap, stamp
+	return snap, nil
+}
+
+func openSnapshot(path string) (_ *snapshot, err error) {
+	db, err := sql.Open("sqlite", "file:"+path+"?mode=ro")
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			db.Close()
+		}
+	}()
+	snap := &snapshot{DB: db, Meta: map[string]string{}}
+
+	rows, err := db.Query(`SELECT key, value FROM meta`)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var k, v string
+		if err := rows.Scan(&k, &v); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		snap.Meta[k] = v
+	}
+	rows.Close()
+
+	st := &snap.Stats
+	err = db.QueryRow(`SELECT COALESCE(SUM(setup_hook = 0), 0),
+		COALESCE(SUM(setup_hook = 0 AND maintainer_count = 0 AND team_count = 0), 0),
+		COALESCE(SUM(setup_hook = 0 AND direct_maintainer_count = 0 AND team_count > 0), 0),
+		COALESCE(SUM(setup_hook = 0 AND maintainer_count = 1 AND team_count = 0), 0),
+		COALESCE(SUM(setup_hook = 0 AND broken), 0),
+		COALESCE(SUM(setup_hook), 0),
+		(SELECT COUNT(*) FROM maintainers),
+		(SELECT COUNT(*) FROM teams)
+		FROM packages`).Scan(&st.Packages, &st.Unmaintained, &st.TeamOnly, &st.Single, &st.Broken, &st.SetupHooks, &st.Maintainers, &st.Teams)
+	if err != nil {
+		return nil, err
+	}
+
+	if snap.Sets, err = queryCounts(db, `SELECT package_set, COUNT(*) AS n FROM packages WHERE setup_hook = 0
+		GROUP BY package_set ORDER BY n DESC, package_set`); err != nil {
+		return nil, err
+	}
+	return snap, nil
+}
+
+func queryCounts(db *sql.DB, query string, args ...any) ([]countRow, error) {
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []countRow
+	for rows.Next() {
+		var c countRow
+		if err := rows.Scan(&c.Name, &c.Count); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+type page struct {
+	Title string
+	Nav   string // highlighted navigation entry
+	Snap  *snapshot
+	Query url.Values
+	Data  any
+}
+
+// handlerFunc fills p and returns the name of the template to render.
+type handlerFunc func(r *http.Request, snap *snapshot, p *page) (string, error)
+
+func (s *server) handle(h handlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		p := &page{Query: r.URL.Query()}
+		snap, err := s.current()
+		name := "error"
+		if err == nil {
+			p.Snap = snap
+			name, err = h(r, snap, p)
+		}
+		status := http.StatusOK
+		switch {
+		case err == nil:
+		case errors.Is(err, errNoData):
+			status = http.StatusServiceUnavailable
+			p.Title, p.Data = "No data yet", "The database has not been generated yet. Run `nixmaint update` and reload."
+		case errors.Is(err, errNotFound):
+			status = http.StatusNotFound
+			p.Title, p.Data = "Not found", "There is no such package in this nixpkgs revision."
+		default:
+			log.Printf("%s: %v", r.URL, err)
+			status = http.StatusInternalServerError
+			p.Title, p.Data = "Error", "Internal error, see the server log."
+		}
+		if err != nil {
+			name = "error"
+		}
+		var buf bytes.Buffer
+		if err := s.pages[name].Execute(&buf, p); err != nil {
+			log.Printf("%s: rendering %s: %v", r.URL, name, err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(status)
+		_, _ = buf.WriteTo(w)
+	}
+}

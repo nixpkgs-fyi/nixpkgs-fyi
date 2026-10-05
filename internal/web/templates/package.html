@@ -1,0 +1,68 @@
+{{define "content"}}{{$d := .Data}}{{$rev := .Snap.Meta.rev}}
+<h1>{{$d.Attr}} <small>{{$d.Version}}</small> {{template "badges" $d}}</h1>
+{{with $d.RequestedAttr}}<p class="note">Requested as <code>{{.}}</code>, which evaluates to the same derivation.</p>{{end}}
+{{with $d.Description}}<p class="lead">{{.}}</p>{{end}}
+
+<dl class="facts">
+  <dt>Name</dt><dd><code>{{$d.Name}}</code></dd>
+  <dt>Package set</dt><dd><a href="/{{q nil "set" $d.Set}}">{{$d.Set}}</a></dd>
+  {{with $d.Homepage}}<dt>Homepage</dt><dd><a href="{{.}}">{{.}}</a></dd>{{end}}
+  {{with $d.License}}<dt>License</dt><dd>{{.}}</dd>{{end}}
+  {{with $d.MainProgram}}<dt>Main program</dt><dd><code>{{.}}</code></dd>{{end}}
+  {{with $d.Position}}<dt>Source</dt><dd>{{with sourceURL $rev .}}<a href="{{.}}">{{$d.Position}}</a>{{else}}{{.}}{{end}}</dd>{{end}}
+  <dt>Derivation</dt><dd><code>{{$d.DrvPath}}</code></dd>
+  {{with $d.Aliases}}<dt>Also available as</dt><dd>{{range $i, $a := .}}{{if $i}}, {{end}}<code>{{$a}}</code>{{end}}</dd>{{end}}
+</dl>
+
+<h2>Maintainers <small>{{len $d.People}}</small></h2>
+{{if $d.People}}
+<table>
+<thead><tr><th>Handle</th><th>Name</th><th>Contact</th><th>Via</th></tr></thead>
+<tbody>
+{{range $d.People}}
+<tr>
+  <td><a href="/{{q nil "maintainer" .Handle}}">{{.Handle}}</a></td>
+  <td>{{.Name}}</td>
+  <td>{{if .GitHub}}<a href="https://github.com/{{.GitHub}}">GitHub</a>{{end}}{{with .Email}} · <a href="mailto:{{.}}">{{.}}</a>{{end}}{{with .Matrix}} · {{.}}{{end}}</td>
+  <td>{{if .Direct}}listed on package{{end}}{{if and .Direct .ViaTeams}}, {{end}}{{with .ViaTeams}}team {{.}}{{end}}</td>
+</tr>
+{{end}}
+</tbody>
+</table>
+{{else}}
+<p class="warning">This package has no maintainers.</p>
+{{end}}
+
+{{with $d.TeamRows}}
+<h2>Teams <small>{{len .}}</small></h2>
+<ul>
+{{range .}}<li><a href="/{{q nil "team" .ShortName}}">{{.ShortName}}</a>{{with .Scope}}: {{.}}{{end}}</li>{{end}}
+</ul>
+{{end}}
+
+<h2>Dependencies <small>{{len $d.Deps}}</small></h2>
+{{if $d.Deps}}{{template "deptable" $d.Deps}}{{else}}<p>No dependencies on other packages.</p>{{end}}
+
+<h2>Used by <small>{{num $d.RDepCount}} directly, {{num $d.RDepTransitive}} transitively</small></h2>
+{{if $d.RDeps}}
+{{if lt $d.RDepsShown $d.RDepCount}}<p class="note">Showing the {{$d.RDepsShown}} direct dependents with the most dependents themselves.</p>{{end}}
+{{template "deptable" $d.RDeps}}
+{{else}}<p>No package depends on this one.</p>{{end}}
+{{end}}
+
+{{define "deptable"}}
+<table class="packages">
+<thead><tr><th>Package</th><th>As</th><th>Maintainers</th><th class="num">Used by (transitive)</th><th>Status</th></tr></thead>
+<tbody>
+{{range .}}
+<tr class="{{.Status}}">
+  <td><a href="/package/{{pathEscape .Attr}}">{{.Attr}}</a> <span class="version">{{.Version}}</span></td>
+  <td>{{kindLabel .Kind}}</td>
+  <td><div class="clip people" title="{{join .Maintainers ", "}}">{{range $i, $m := .Maintainers}}{{if $i}}, {{end}}<a href="/{{q nil "maintainer" $m}}">{{$m}}</a>{{end}}</div></td>
+  <td class="num">{{num .RDepTransitive}}</td>
+  <td>{{template "badges" .}}</td>
+</tr>
+{{end}}
+</tbody>
+</table>
+{{end}}
