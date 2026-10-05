@@ -11,17 +11,13 @@ self:
     environment.systemPackages = [ pkgs.sqlite ];
     services.nixpkgs-maintenance = {
       enable = true;
-      update = {
-        workers = 1;
-        extraArgs = [
-          "-nixpkgs"
-          "${pkgs.path}"
-          "-rev"
-          "0000000000000000000000000000000000000000"
-          "-subset"
-          "p: { inherit (p) hello stdenv; }"
-        ];
-      };
+      update.workers = 1;
+    };
+    # Evaluate an offline subset of the nixpkgs this test is built with.
+    systemd.services.nixpkgs-maintenance-update.environment = {
+      NIXMAINT_NIXPKGS = "${pkgs.path}";
+      NIXMAINT_REV = "0000000000000000000000000000000000000000";
+      NIXMAINT_SUBSET = "p: { inherit (p) hello stdenv; }";
     };
   };
 

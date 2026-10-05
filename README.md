@@ -15,21 +15,23 @@ shows which packages are unmaintained and how much depends on them.
 
 ```sh
 nix build
-./result/bin/nixmaint update -db nixpkgs.sqlite      # full eval: ~3.5 min with 12 workers on 24 cores, ~100 MB database
-./result/bin/nixmaint serve -db nixpkgs.sqlite       # http://127.0.0.1:8787
+./result/bin/nixmaint update     # full eval: ~3.5 min with 12 workers on 24 cores, ~100 MB database
+./result/bin/nixmaint serve      # http://127.0.0.1:8787
 ```
 
-`nixmaint update` flags:
+Configuration is done with environment variables; `nixmaint help` lists them.
 
-| flag | default | |
+| variable | default | |
 |---|---|---|
-| `-db` | `nixpkgs.sqlite` | database file. It is written as `<db>.tmp` and atomically renamed, so a failed run leaves the old database in place |
-| `-channel` | `nixos-unstable` | channel whose revision is evaluated (from `channels.nixos.org`) |
-| `-system` | `x86_64-linux` | system to evaluate for |
-| `-workers` / `-max-memory` | min(CPUs, 8) / 4096 | nix-eval-jobs workers and MiB per worker |
-| `-force` | | regenerate even if the revision did not change |
-| `-nixpkgs PATH -rev REV` | | evaluate a local nixpkgs checkout instead |
-| `-subset 'p: { inherit (p) hello; }'` | `pkgs: pkgs` | evaluate only part of the package set (testing) |
+| `NIXMAINT_DB` | `nixpkgs.sqlite` | database file. `update` writes it as `<db>.tmp` and atomically renames it, so a failed run leaves the old database in place |
+| `NIXMAINT_LISTEN` | `127.0.0.1:8787` | address `serve` listens on |
+| `NIXMAINT_CHANNEL` | `nixos-unstable` | channel whose revision is evaluated (from `channels.nixos.org`) |
+| `NIXMAINT_SYSTEM` | `x86_64-linux` | system to evaluate for |
+| `NIXMAINT_WORKERS` / `NIXMAINT_MAX_MEMORY` | min(CPUs, 8) / 4096 | nix-eval-jobs workers and MiB per worker |
+| `NIXMAINT_FORCE` | `false` | `true` regenerates even if the revision did not change |
+| `NIXMAINT_NIXPKGS` + `NIXMAINT_REV` | | evaluate a local nixpkgs checkout instead of fetching the channel |
+| `NIXMAINT_SUBSET` | `pkgs: pkgs` | Nix function selecting part of the package set (testing), e.g. `p: { inherit (p) hello; }` |
+| `NIXMAINT_NIX_EVAL_JOBS` | `nix-eval-jobs` | nix-eval-jobs binary |
 
 ### What is evaluated
 
@@ -140,7 +142,8 @@ WHERE p.attr = 'firefox';
 
 ```sh
 nix develop
-go build -o nixmaint . && ./nixmaint update -db dev.sqlite -subset 'p: { inherit (p) hello curl; }'
-./nixmaint serve -db dev.sqlite
+go build -o nixmaint .
+NIXMAINT_DB=dev.sqlite NIXMAINT_SUBSET='p: { inherit (p) hello curl; }' ./nixmaint update
+NIXMAINT_DB=dev.sqlite ./nixmaint serve
 nix flake check   # NixOS VM test: update service + web interface
 ```

@@ -77,11 +77,6 @@ in
         default = 4096;
         description = "Memory per nix-eval-jobs worker in MiB; workers × maxMemory is the evaluation's memory budget.";
       };
-      extraArgs = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [ ];
-        description = "Extra arguments for `nixmaint update`.";
-      };
     };
   };
 
@@ -98,26 +93,17 @@ in
       wants = [ "network-online.target" ];
       after = [ "network-online.target" ];
       path = [ config.nix.package ];
-      environment.HOME = stateDir;
+      environment = {
+        HOME = stateDir;
+        NIXMAINT_DB = db;
+        NIXMAINT_CHANNEL = cfg.update.channel;
+        NIXMAINT_SYSTEM = cfg.update.system;
+        NIXMAINT_WORKERS = toString cfg.update.workers;
+        NIXMAINT_MAX_MEMORY = toString cfg.update.maxMemory;
+      };
       serviceConfig = hardening // {
         Type = "oneshot";
-        ExecStart = lib.escapeShellArgs (
-          [
-            exe
-            "update"
-            "-db"
-            db
-            "-channel"
-            cfg.update.channel
-            "-system"
-            cfg.update.system
-            "-workers"
-            (toString cfg.update.workers)
-            "-max-memory"
-            (toString cfg.update.maxMemory)
-          ]
-          ++ cfg.update.extraArgs
-        );
+        ExecStart = "${exe} update";
         Nice = 19;
         IOSchedulingClass = "idle";
         TimeoutStartSec = "6h";
@@ -140,15 +126,12 @@ in
       description = "nixpkgs maintenance web interface";
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" ];
+      environment = {
+        NIXMAINT_DB = db;
+        NIXMAINT_LISTEN = cfg.listen;
+      };
       serviceConfig = hardening // {
-        ExecStart = lib.escapeShellArgs [
-          exe
-          "serve"
-          "-db"
-          db
-          "-listen"
-          cfg.listen
-        ];
+        ExecStart = "${exe} serve";
         Restart = "on-failure";
       };
     };
