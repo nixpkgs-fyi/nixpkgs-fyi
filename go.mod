@@ -1,4 +1,4 @@
-module github.com/pinpox/nixpkgs-maintenance
+module github.com/nixpkgs-fyi/nixpkgs-fyi
 
 go 1.26.0
 

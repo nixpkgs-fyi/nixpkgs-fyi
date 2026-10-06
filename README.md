@@ -32,9 +32,9 @@ Configuration is done with environment variables (`nixmaint help`):
 
 ```nix
 {
-  inputs.nixpkgs-maintenance.url = "github:pinpox/nixpkgs-maintenance";
+  inputs.nixpkgs-fyi.url = "github:nixpkgs-fyi/nixpkgs-fyi";
 
-  imports = [ inputs.nixpkgs-maintenance.nixosModules.default ];
+  imports = [ inputs.nixpkgs-fyi.nixosModules.default ];
   services.nixpkgs-maintenance = {
     enable = true;
     listen = "127.0.0.1:8787";
@@ -45,4 +45,15 @@ Configuration is done with environment variables (`nixmaint help`):
 
 The database is updated daily and 5 minutes after boot, and only when the
 channel has moved.
+
+## Deployment
+
+[nixpkgs.fyi](https://nixpkgs.fyi) runs on the [clan](https://clan.lol)
+machine `uno` defined in this repository (`flake.nix`, `machines/`, `vars/`,
+`secrets/`). It uses the module and package from this repo directly.
+
+```sh
+nix develop                 # provides the clan CLI
+clan machines update uno
+```
 

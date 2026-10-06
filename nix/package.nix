@@ -25,7 +25,7 @@ buildGoModule {
   nativeBuildInputs = [ makeWrapper ];
 
   postInstall = ''
-    mv $out/bin/nixpkgs-maintenance $out/bin/nixmaint
+    mv $out/bin/nixpkgs-fyi $out/bin/nixmaint
     # nix-eval-jobs is pinned; nix (for nix-prefetch-url) only serves as a
     # fallback so the system's nix is used where available.
     wrapProgram $out/bin/nixmaint \

@@ -13,8 +13,8 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/pinpox/nixpkgs-maintenance/internal/update"
-	"github.com/pinpox/nixpkgs-maintenance/internal/web"
+	"github.com/nixpkgs-fyi/nixpkgs-fyi/internal/update"
+	"github.com/nixpkgs-fyi/nixpkgs-fyi/internal/web"
 )
 
 var defaultWorkers = strconv.Itoa(min(runtime.NumCPU(), 8))
