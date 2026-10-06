@@ -5,11 +5,16 @@
   <em>Sole</em> counts packages that would become unmaintained if this maintainer left.
 </p>
 
-<form class="filters" method="get" action="/maintainers">
-  <input type="search" name="q" value='{{$q.Get "q"}}' placeholder="Search handle or name" autofocus>
+<form class="filters sparse" method="get" action="/maintainers">
+  <label class="search">Search
+    <input type="search" name="q" value='{{$q.Get "q"}}' placeholder="Handle or name" autofocus>
+  </label>
   <input type="hidden" name="sort" value="{{$d.Sort}}">
   <input type="hidden" name="dir" value="{{$d.Dir}}">
-  <button type="submit">Filter</button>
+  <div class="actions">
+    <button type="submit">Filter</button>
+    <a class="button" href="/maintainers">Reset</a>
+  </div>
 </form>
 
 <p class="count">{{num $d.Total}} maintainers{{if gt $d.Pager.Pages 1}} · page {{$d.Pager.Page}} of {{num $d.Pager.Pages}}{{end}}</p>

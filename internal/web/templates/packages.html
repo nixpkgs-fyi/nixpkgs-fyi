@@ -21,14 +21,16 @@
 {{end}}
 
 <form class="filters" method="get" action="/">
-  <input type="search" name="q" value='{{$q.Get "q"}}' placeholder="Search attribute or description" autofocus>
+  <label class="search">Search
+    <input type="search" name="q" value='{{$q.Get "q"}}' placeholder="Attribute or description" autofocus>
+  </label>
   <label>Status
     <select name="status">
       {{$st := $q.Get "status"}}
       <option value="">all</option>
-      <option value="unmaintained"{{if eq $st "unmaintained"}} selected{{end}}>unmaintained (no maintainer, no team)</option>
+      <option value="unmaintained"{{if eq $st "unmaintained"}} selected{{end}} title="no maintainer and no team">unmaintained</option>
       <option value="single"{{if eq $st "single"}} selected{{end}}>single maintainer</option>
-      <option value="team-only"{{if eq $st "team-only"}} selected{{end}}>maintained by teams only</option>
+      <option value="team-only"{{if eq $st "team-only"}} selected{{end}} title="maintained by teams only">team only</option>
       <option value="maintained"{{if eq $st "maintained"}} selected{{end}}>maintained</option>
     </select>
   </label>
@@ -55,12 +57,14 @@
       <option value="only"{{if eq $h "only"}} selected{{end}}>only setup hooks</option>
     </select>
   </label>
-  <label>Maintainer <input type="text" name="maintainer" value='{{$q.Get "maintainer"}}' placeholder="GitHub handle" size="14"></label>
-  {{with $q.Get "team"}}<label>Team <input type="text" name="team" value="{{.}}" size="12"></label>{{end}}
+  <label>Maintainer <input type="text" name="maintainer" value='{{$q.Get "maintainer"}}' placeholder="GitHub handle"></label>
+  {{with $q.Get "team"}}<label>Team <input type="text" name="team" value="{{.}}"></label>{{end}}
   <input type="hidden" name="sort" value="{{$d.Sort}}">
   <input type="hidden" name="dir" value="{{$d.Dir}}">
-  <button type="submit">Filter</button>
-  <a href="/">Reset</a>
+  <div class="actions">
+    <button type="submit">Filter</button>
+    <a class="button" href="/">Reset</a>
+  </div>
 </form>
 
 <p class="count">{{num $d.Total}} packages{{if gt $d.Pager.Pages 1}} · page {{$d.Pager.Page}} of {{num $d.Pager.Pages}}{{end}}</p>
