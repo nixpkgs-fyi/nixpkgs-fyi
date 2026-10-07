@@ -15,7 +15,7 @@
     {{if $d.Newest}}<span class="outdated">outdated</span>, newest version is <b>{{$d.Newest}}</b>
     {{else if eq $d.RepologyStatus "newest"}}newest version
     {{else if $d.RepologyStatus}}{{$d.RepologyStatus}}
-    {{else}}no newer version known{{end}}
+    {{else}}not reported as outdated{{end}}
     · {{if $d.RepologyProject}}<a href="https://repology.org/project/{{pathEscape $d.RepologyProject}}/versions">{{$d.RepologyProject}}</a>{{else}}<a href="https://repology.org/tools/project-by?repo={{$meta.repology_repo}}&amp;name_type=srcname&amp;target_page=project_versions&amp;name={{$d.Attr}}">look up</a>{{end}}
     <small>(as of {{.}})</small>
   </dd>{{end}}
