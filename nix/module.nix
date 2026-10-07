@@ -107,6 +107,9 @@ in
       description = "Regenerate the nixpkgs maintenance database";
       wants = [ "network-online.target" ];
       after = [ "network-online.target" ];
+      # A run takes up to an hour: a deploy must neither kill it nor block
+      # on restarting it. The next timer run uses the new version.
+      restartIfChanged = false;
       path = [ config.nix.package ];
       environment = {
         HOME = stateDir;
