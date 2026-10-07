@@ -150,7 +150,10 @@ func projectPackages(project, repo string, pkgs []repologyAPIPackage) []repology
 // insertRepology matches Repology packages to packages (by attribute or
 // alias) and records their status. Repology may have seen a different
 // nixpkgs revision: a status is only trusted if the versions agree, and a
-// package already at the newest version counts as newest.
+// package already at the newest version counts as newest. An outdated
+// package is left out if no repository has the project's newest version
+// (e.g. only devel or ignored versions are newer): the UI could not say what
+// it is outdated against.
 func insertRepology(tx *sql.Tx, rps []repologyPackage) (matched int, err error) {
 	lookup, err := tx.Prepare(`SELECT id, version FROM packages WHERE attr = ?
 		UNION ALL SELECT p.id, p.version FROM aliases a JOIN packages p ON p.id = a.package_id WHERE a.attr = ? LIMIT 1`)
@@ -182,6 +185,9 @@ func insertRepology(tx *sql.Tx, rps []repologyPackage) (matched int, err error) 
 		case version == rp.Newest:
 			status = "newest"
 		default:
+			continue
+		}
+		if status == "outdated" && rp.Newest == "" {
 			continue
 		}
 		res, err := insert.Exec(id, rp.Project, status, rp.Newest)
