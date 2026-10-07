@@ -18,13 +18,13 @@ import (
 
 type Options struct {
 	DB        string
-	Channel   string // e.g. nixos-unstable; used when Nixpkgs is empty
+	Branch    string // NixOS/nixpkgs branch, e.g. master; used when Nixpkgs is empty
 	System    string
 	Workers   int
 	MaxMemory int
 	Force     bool
 
-	Nixpkgs string // use this nixpkgs source instead of fetching the channel
+	Nixpkgs string // use this nixpkgs source instead of fetching the branch
 	Rev     string // revision recorded for Nixpkgs
 	Subset  string // Nix function selecting the package set to evaluate
 
@@ -32,24 +32,24 @@ type Options struct {
 
 	Repology     bool   // compare versions with Repology
 	RepologyURL  string // Repology API base URL
-	RepologyRepo string // Repology repository; derived from Channel if empty
+	RepologyRepo string // Repology repository; derived from Branch if empty
 }
 
 func Run(ctx context.Context, o Options) error {
 	start := time.Now()
 	if o.Repology && o.RepologyRepo == "" {
 		var err error
-		if o.RepologyRepo, err = repologyRepo(o.Channel); err != nil {
+		if o.RepologyRepo, err = repologyRepo(o.Branch); err != nil {
 			return err
 		}
 	}
 	src, rev := o.Nixpkgs, o.Rev
 	if src == "" {
 		var err error
-		if rev, err = channelRev(ctx, o.Channel); err != nil {
+		if rev, err = branchRev(ctx, o.Branch); err != nil {
 			return err
 		}
-		log.Printf("channel %s is at %s", o.Channel, rev)
+		log.Printf("branch %s is at %s", o.Branch, rev)
 	}
 	if old := ReadMeta(o.DB); !o.Force && old != nil &&
 		old["rev"] == rev && old["system"] == o.System && old["schema_version"] == SchemaVersion {
@@ -57,7 +57,7 @@ func Run(ctx context.Context, o Options) error {
 			log.Printf("%s is already up to date (%s), nothing to do", o.DB, rev)
 			return nil
 		}
-		// Upstream releases do not wait for the channel: refresh the
+		// Upstream releases do not wait for nixpkgs: refresh the
 		// Repology data on its own.
 		log.Printf("%s is already up to date (%s), refreshing Repology data", o.DB, rev)
 		fetched := time.Now()
@@ -119,7 +119,7 @@ func Run(ctx context.Context, o Options) error {
 	meta := map[string]string{
 		"schema_version":   SchemaVersion,
 		"rev":              rev,
-		"channel":          o.Channel,
+		"branch":           o.Branch,
 		"system":           o.System,
 		"generated_at":     time.Now().UTC().Format(time.RFC3339),
 		"eval_seconds":     strconv.Itoa(int(evalSeconds)),
@@ -128,7 +128,7 @@ func Run(ctx context.Context, o Options) error {
 		"eval_error_count": strconv.Itoa(len(g.Errors)),
 	}
 	if o.Nixpkgs != "" {
-		meta["channel"] = ""
+		meta["branch"] = ""
 	}
 	maps.Copy(meta, repologyMetas)
 	if err := writeDB(o.DB, g, rps, meta, src); err != nil {
@@ -138,14 +138,16 @@ func Run(ctx context.Context, o Options) error {
 	return nil
 }
 
-func channelRev(ctx context.Context, channel string) (string, error) {
-	url := "https://channels.nixos.org/" + channel + "/git-revision"
+// branchRev returns the commit a branch of NixOS/nixpkgs points to.
+func branchRev(ctx context.Context, branch string) (string, error) {
+	url := "https://api.github.com/repos/NixOS/nixpkgs/commits/" + branch
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", err
 	}
+	req.Header.Set("Accept", "application/vnd.github.sha")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err

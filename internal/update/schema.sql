@@ -5,7 +5,7 @@ CREATE TABLE meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
--- keys: schema_version, rev, channel, system, generated_at (RFC 3339 UTC),
+-- keys: schema_version, rev, branch, system, generated_at (RFC 3339 UTC),
 --       eval_seconds, package_count, edge_count, eval_error_count,
 --       repology_repo, repology_fetched_at (RFC 3339 UTC; only if Repology data was fetched)
 

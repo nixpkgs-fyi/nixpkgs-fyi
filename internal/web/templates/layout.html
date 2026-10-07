@@ -17,7 +17,7 @@
   </nav>
   <div class="snapshot">
     {{with .Snap}}{{$m := .Meta}}
-    {{if $m.channel}}{{$m.channel}} · {{end}}{{$m.system}} ·
+    {{if $m.branch}}{{$m.branch}} · {{end}}{{$m.system}} ·
     <a href="https://github.com/NixOS/nixpkgs/commit/{{$m.rev}}"><code>{{shortRev $m.rev}}</code></a> ·
     generated {{$m.generated_at}}
     {{end}}

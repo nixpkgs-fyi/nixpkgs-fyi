@@ -57,16 +57,17 @@ in
         default = "daily";
         example = "*-*-* 03:00:00";
         description = ''
-          How often to check the channel and regenerate the database, as a
+          How often to check the branch and regenerate the database, as a
           systemd calendar expression (e.g. "hourly", "daily", "weekly",
           "*-*-* 03:00:00"); see {manpage}`systemd.time(7)`. Nothing is done
-          if the channel revision did not change.
+          if the branch did not move.
         '';
       };
-      channel = lib.mkOption {
+      branch = lib.mkOption {
         type = lib.types.str;
-        default = "nixos-unstable";
-        description = "Channel whose current revision is evaluated.";
+        default = "master";
+        example = "nixos-unstable";
+        description = "Branch of NixOS/nixpkgs whose current commit is evaluated.";
       };
       system = lib.mkOption {
         type = lib.types.str;
@@ -89,7 +90,7 @@ in
         description = ''
           Compare package versions with [Repology](https://repology.org) to
           show outdated packages. Its data is refreshed on every run, also if
-          the channel did not move.
+          the branch did not move.
         '';
       };
     };
@@ -114,7 +115,7 @@ in
       environment = {
         HOME = stateDir;
         NIXMAINT_DB = db;
-        NIXMAINT_CHANNEL = cfg.update.channel;
+        NIXMAINT_BRANCH = cfg.update.branch;
         NIXMAINT_SYSTEM = cfg.update.system;
         NIXMAINT_WORKERS = toString cfg.update.workers;
         NIXMAINT_MAX_MEMORY = toString cfg.update.maxMemory;

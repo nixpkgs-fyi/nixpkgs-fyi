@@ -2,7 +2,7 @@
 
 Find unmaintained packages in nixpkgs.
 
-`nixmaint update` evaluates the current `nixos-unstable` with
+`nixmaint update` evaluates the current `master` of nixpkgs with
 [nix-eval-jobs](https://github.com/nix-community/nix-eval-jobs) and stores all
 packages, their maintainers, teams and dependencies in SQLite. It also asks
 [Repology](https://repology.org) which packages are outdated, i.e. have a newer
@@ -24,7 +24,7 @@ Configuration is done with environment variables (`nixmaint help`):
 | `NIXMAINT_DB`         | `nixpkgs.sqlite`          |
 | `NIXMAINT_LISTEN`     | `127.0.0.1:8787`          |
 | `NIXMAINT_BANNER`     | `true` (credits footer)   |
-| `NIXMAINT_CHANNEL`    | `nixos-unstable`          |
+| `NIXMAINT_BRANCH`     | `master`                  |
 | `NIXMAINT_SYSTEM`     | `x86_64-linux`            |
 | `NIXMAINT_WORKERS`    | number of CPUs, at most 8 |
 | `NIXMAINT_MAX_MEMORY` | `4096` (MiB per worker)   |
@@ -47,13 +47,15 @@ Configuration is done with environment variables (`nixmaint help`):
 ```
 
 The database is updated daily and 5 minutes after boot, and only when the
-channel has moved. The Repology data is refreshed on every run.
+branch has moved. The Repology data is refreshed on every run.
 
 Only projects Repology considers outdated in nixpkgs are fetched (about 90 API
 requests, rate limited to one per second), as Repology asks not to download
 everything through its API. Packages without Repology data are therefore
 either up to date or not tracked by Repology. A status is only shown if
-Repology saw the same version as the evaluated revision.
+Repology saw the same version as the evaluated revision, or the evaluated
+version is the newest one. Repology tracks `nixos-unstable`, so packages
+updated on `master` but not yet in the channel count as newest.
 
 ## Deployment
 

@@ -41,19 +41,21 @@ type repologyAPIPackage struct {
 	Status      string  `json:"status"`
 }
 
-var stableChannel = regexp.MustCompile(`^nix(?:os|pkgs)-(\d\d)\.(\d\d)(?:-|$)`)
+var stableBranch = regexp.MustCompile(`^(?:nixos|nixpkgs|release|staging)-(\d\d)\.(\d\d)(?:-|$)`)
 
-// repologyRepo returns the Repology repository tracking a channel:
-// nix_unstable for nixos-unstable and nixpkgs-unstable(-small),
-// nix_stable_YY_MM for nixos-YY.MM and friends.
-func repologyRepo(channel string) (string, error) {
-	if strings.HasPrefix(channel, "nixos-unstable") || strings.HasPrefix(channel, "nixpkgs-unstable") {
+// repologyRepo returns the Repology repository closest to a nixpkgs branch:
+// nix_unstable for master, staging(-next) and the unstable channel branches,
+// nix_stable_YY_MM for release-YY.MM, nixos-YY.MM and friends.
+func repologyRepo(branch string) (string, error) {
+	switch {
+	case branch == "master", branch == "staging", branch == "staging-next",
+		strings.HasPrefix(branch, "nixos-unstable"), strings.HasPrefix(branch, "nixpkgs-unstable"):
 		return "nix_unstable", nil
 	}
-	if m := stableChannel.FindStringSubmatch(channel); m != nil {
+	if m := stableBranch.FindStringSubmatch(branch); m != nil {
 		return "nix_stable_" + m[1] + "_" + m[2], nil
 	}
-	return "", fmt.Errorf("no Repology repository known for channel %q, set NIXMAINT_REPOLOGY_REPO", channel)
+	return "", fmt.Errorf("no Repology repository known for branch %q, set NIXMAINT_REPOLOGY_REPO", branch)
 }
 
 // fetchRepology returns the packages of repo in all projects Repology

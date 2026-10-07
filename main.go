@@ -31,12 +31,12 @@ Configuration (environment variables):
   NIXMAINT_BANNER          "0" or "false" hides the "built with ❤️ by pinpox" footer (default: true)
 
   update:
-  NIXMAINT_CHANNEL         channel whose current revision is evaluated (default: nixos-unstable)
+  NIXMAINT_BRANCH          NixOS/nixpkgs branch whose current commit is evaluated (default: master)
   NIXMAINT_SYSTEM          system to evaluate packages for (default: x86_64-linux)
   NIXMAINT_WORKERS         nix-eval-jobs workers (default: number of CPUs, at most 8)
   NIXMAINT_MAX_MEMORY      memory per nix-eval-jobs worker in MiB (default: 4096)
-  NIXMAINT_FORCE           "1" or "true": regenerate even if the database is at the channel revision
-  NIXMAINT_NIXPKGS         evaluate this nixpkgs checkout instead of fetching the channel
+  NIXMAINT_FORCE           "1" or "true": regenerate even if the database is at the branch's commit
+  NIXMAINT_NIXPKGS         evaluate this nixpkgs checkout instead of fetching the branch
                            (requires NIXMAINT_REV)
   NIXMAINT_REV             revision to record for NIXMAINT_NIXPKGS
   NIXMAINT_SUBSET          Nix function selecting the attribute set to evaluate, for testing
@@ -46,7 +46,7 @@ Configuration (environment variables):
                            otherwise its data is refreshed on every run, also if the revision is unchanged
   NIXMAINT_REPOLOGY_URL    Repology API base URL (default: https://repology.org/api/v1)
   NIXMAINT_REPOLOGY_REPO   Repology repository to compare with
-                           (default: nix_unstable or nix_stable_YY_MM, from NIXMAINT_CHANNEL)
+                           (default: nix_unstable or nix_stable_YY_MM, from NIXMAINT_BRANCH)
 `
 
 func main() {
@@ -79,7 +79,7 @@ func main() {
 func runUpdate(ctx context.Context) error {
 	o := update.Options{
 		DB:       env("NIXMAINT_DB", "nixpkgs.sqlite"),
-		Channel:  env("NIXMAINT_CHANNEL", "nixos-unstable"),
+		Branch:   env("NIXMAINT_BRANCH", "master"),
 		System:   env("NIXMAINT_SYSTEM", "x86_64-linux"),
 		Nixpkgs:  env("NIXMAINT_NIXPKGS", ""),
 		Rev:      env("NIXMAINT_REV", ""),
