@@ -5,6 +5,7 @@
   <a class="stat single" href="/?status=single&amp;sort=rdeps_transitive&amp;dir=desc"><b>{{num $s.Single}}</b>single maintainer ({{pct $s.Single $s.Packages}})</a>
   <a class="stat team-only" href="/?status=team-only&amp;sort=rdeps_transitive&amp;dir=desc"><b>{{num $s.TeamOnly}}</b>team only ({{pct $s.TeamOnly $s.Packages}})</a>
   <a class="stat broken" href="/?broken=1"><b>{{num $s.Broken}}</b>broken</a>
+  {{with .Snap.Meta.repology_fetched_at}}<a class="stat outdated" href="/?repology=outdated&amp;sort=rdeps_transitive&amp;dir=desc" title="Repology knows a newer version (data from {{.}})"><b>{{num $s.Outdated}}</b>outdated ({{pct $s.Outdated $s.Packages}})</a>{{end}}
   <a class="stat" href="/maintainers"><b>{{num $s.Maintainers}}</b>maintainers</a>
   <a class="stat" href="/teams"><b>{{num $s.Teams}}</b>teams</a>
   <a class="stat" href="/?hooks=only" title="Built with makeSetupHook; hidden from the counts and list by default"><b>{{num $s.SetupHooks}}</b>setup hooks (hidden)</a>
@@ -49,6 +50,14 @@
       <option value="0"{{if eq $b "0"}} selected{{end}}>not broken</option>
     </select>
   </label>
+  {{if .Snap.Meta.repology_fetched_at}}
+  <label>Version
+    <select name="repology">
+      <option value="">any</option>
+      <option value="outdated"{{if eq ($q.Get "repology") "outdated"}} selected{{end}} title="Repology knows a newer version">outdated</option>
+    </select>
+  </label>
+  {{end}}
   <label>Setup hooks
     <select name="hooks">
       {{$h := $q.Get "hooks"}}

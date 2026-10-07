@@ -1,7 +1,7 @@
 {{define "pkgrow"}}
 <tr class="{{.Status}}">
   <td><div class="clip attr"><a href="/package/{{pathEscape .Attr}}" title="{{.Attr}}">{{.Attr}}</a></div><div class="clip desc" title="{{.Description}}">{{.Description}}</div></td>
-  <td class="version"><div class="clip" title="{{.Version}}">{{.Version}}</div></td>
+  <td class="version"><div class="clip" title="{{.Version}}{{with .Newest}}, newest is {{.}}{{end}}">{{.Version}}{{with .Newest}} <span class="newer">→ {{.}}</span>{{end}}</div></td>
   <td><div class="clip people" title="{{join .Maintainers ", "}}">{{range $i, $m := .Maintainers}}{{if $i}}, {{end}}<a href="/{{q nil "maintainer" $m}}">{{$m}}</a>{{end}}</div></td>
   <td class="num">{{.MaintainerCount}}</td>
   <td><div class="clip teams" title="{{join .Teams ", "}}">{{range $i, $t := .Teams}}{{if $i}}, {{end}}<a href="/{{q nil "team" $t}}">{{$t}}</a>{{end}}</div></td>
@@ -12,7 +12,7 @@
 </tr>
 {{end}}
 
-{{define "badges"}}<span class="badge {{.Status}}">{{.Status}}</span>{{if .SetupHook}} <span class="badge hook" title="built with makeSetupHook">setup hook</span>{{end}}{{if .Broken}} <span class="badge broken">broken</span>{{end}}{{if .Insecure}} <span class="badge insecure">insecure</span>{{end}}{{if .Unfree}} <span class="badge unfree">unfree</span>{{end}}{{end}}
+{{define "badges"}}<span class="badge {{.Status}}">{{.Status}}</span>{{if .SetupHook}} <span class="badge hook" title="built with makeSetupHook">setup hook</span>{{end}}{{if .Broken}} <span class="badge broken">broken</span>{{end}}{{if .Insecure}} <span class="badge insecure">insecure</span>{{end}}{{if .Unfree}} <span class="badge unfree">unfree</span>{{end}}{{with .Newest}} <span class="badge outdated" title="Repology knows a newer version: {{.}}">outdated</span>{{end}}{{end}}
 
 {{define "pager"}}{{if gt .Pages 1}}
 <nav class="pager">

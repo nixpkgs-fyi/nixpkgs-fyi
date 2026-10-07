@@ -34,6 +34,7 @@ type pkgRow struct {
 	Insecure        bool
 	Unfree          bool
 	SetupHook       bool
+	Newest          string // newest upstream version if Repology reports the package outdated
 	Kind            string // dependency kind, on the package page only
 }
 
@@ -55,7 +56,8 @@ const pkgColumns = `p.attr, p.version, COALESCE(p.description, ''), COALESCE(p.l
 	COALESCE((SELECT group_concat(t.short_name, ', ') FROM package_teams pt JOIN teams t ON t.id = pt.team_id WHERE pt.package_id = p.id), ''),
 	p.maintainer_count, p.direct_maintainer_count, p.team_count,
 	p.dep_count, p.rdep_count, p.rdep_transitive_count,
-	p.broken, p.insecure, p.unfree, p.setup_hook`
+	p.broken, p.insecure, p.unfree, p.setup_hook,
+	COALESCE((SELECT r.newest FROM repology r WHERE r.package_id = p.id AND r.status = 'outdated'), '')`
 
 func scanPkg(rows *sql.Rows, extra ...any) (pkgRow, error) {
 	var p pkgRow
@@ -63,7 +65,7 @@ func scanPkg(rows *sql.Rows, extra ...any) (pkgRow, error) {
 	dest := append([]any{&p.Attr, &p.Version, &p.Description, &p.License, &maintainers, &teams,
 		&p.MaintainerCount, &p.DirectCount, &p.TeamCount,
 		&p.DepCount, &p.RDepCount, &p.RDepTransitive,
-		&p.Broken, &p.Insecure, &p.Unfree, &p.SetupHook}, extra...)
+		&p.Broken, &p.Insecure, &p.Unfree, &p.SetupHook, &p.Newest}, extra...)
 	err := rows.Scan(dest...)
 	p.Maintainers = splitList(maintainers)
 	p.Teams = splitList(teams)
@@ -168,6 +170,9 @@ func packagesPage(r *http.Request, snap *snapshot, p *page) (string, error) {
 		where = append(where, `p.package_set = ?`)
 		args = append(args, s)
 	}
+	if q.Get("repology") == "outdated" {
+		where = append(where, `p.id IN (SELECT package_id FROM repology WHERE status = 'outdated')`)
+	}
 	switch q.Get("broken") {
 	case "1":
 		where = append(where, `p.broken = 1`)
@@ -219,6 +224,8 @@ type packageData struct {
 	MainProgram     string
 	Position        string
 	DrvPath         string
+	RepologyProject string // '' if Repology reported nothing for the package
+	RepologyStatus  string
 	Aliases         []string
 	People          []personRow
 	TeamRows        []teamRow
@@ -299,6 +306,10 @@ func packagePage(r *http.Request, snap *snapshot, p *page) (string, error) {
 	}
 	if d.RDeps, err = queryKinded(db, `SELECT `+pkgColumns+`, d.kind FROM dependencies d JOIN packages p ON p.id = d.package_id
 		WHERE d.dep_id = ? ORDER BY p.rdep_transitive_count DESC, p.attr LIMIT ?`, id, rdepsLimit); err != nil {
+		return "", err
+	}
+	err = db.QueryRow(`SELECT project, status FROM repology WHERE package_id = ?`, id).Scan(&d.RepologyProject, &d.RepologyStatus)
+	if err != nil && err != sql.ErrNoRows {
 		return "", err
 	}
 	d.RDepsShown = len(d.RDeps)

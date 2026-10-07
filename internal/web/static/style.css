@@ -35,16 +35,16 @@ main { padding: 1em 1.5em 3em; }
 h1 { font-size: 1.5em; margin: 0.4em 0; }
 h2 { font-size: 1.15em; margin-top: 1.8em; }
 
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(11em, 1fr)); gap: 0.6em; margin-bottom: 1em; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(10em, 1fr)); gap: 0.6em; margin-bottom: 1em; }
 .stat { display: flex; flex-direction: column; padding: 0.5em 0.9em; border: 1px solid var(--line); border-radius: 6px;
   color: var(--muted); }
 .stat b { font-size: 1.35em; color: var(--fg); }
 .stat.unmaintained b { color: var(--red); }
-.stat.single b, .stat.team-only b { color: var(--orange); }
+.stat.single b, .stat.team-only b, .stat.outdated b { color: var(--orange); }
 .stat:hover { text-decoration: none; border-color: var(--accent); }
 
 /* Same column grid as .stats, so filters line up under the stat boxes. */
-.filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(11em, 1fr)); gap: 0.6em; align-items: end;
+.filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(10em, 1fr)); gap: 0.6em; align-items: end;
   margin: 1em 0 0.5em; }
 /* Few fields: keep empty columns so the controls don't stretch across the page. */
 .filters.sparse { grid-template-columns: repeat(auto-fill, minmax(11em, 1fr)); }
@@ -77,7 +77,8 @@ td.empty { color: var(--muted); text-align: center; padding: 2em; }
 .clip { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .clip.attr { max-width: 26em; font-weight: 500; }
 .clip.desc { color: var(--muted); font-size: 0.9em; max-width: 34em; height: 1.45em; }
-td.version .clip { max-width: 8em; }
+td.version .clip { max-width: 12em; }
+.newer, .facts .outdated { color: var(--orange); }
 .clip.people { max-width: 16em; }
 .clip.teams { max-width: 10em; }
 table.packages td { white-space: nowrap; }
@@ -87,7 +88,7 @@ tr.single, tr.team-only { background: var(--yellow-bg); }
 .badge { display: inline-block; padding: 0 0.45em; border-radius: 3px; font-size: 0.82em; white-space: nowrap;
   background: var(--grey-bg); color: var(--muted); }
 .badge.unmaintained { background: var(--red); color: var(--bg); }
-.badge.single, .badge.team-only { background: var(--orange-bg); color: var(--orange); }
+.badge.single, .badge.team-only, .badge.outdated { background: var(--orange-bg); color: var(--orange); }
 .badge.broken, .badge.insecure { background: var(--grey-bg); color: var(--red); }
 .badge.maintained { display: none; }
 

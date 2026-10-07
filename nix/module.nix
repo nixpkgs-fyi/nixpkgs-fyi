@@ -83,6 +83,15 @@ in
         default = 4096;
         description = "Memory per nix-eval-jobs worker in MiB; workers × maxMemory is the evaluation's memory budget.";
       };
+      repology = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Compare package versions with [Repology](https://repology.org) to
+          show outdated packages. Its data is refreshed on every run, also if
+          the channel did not move.
+        '';
+      };
     };
   };
 
@@ -106,6 +115,7 @@ in
         NIXMAINT_SYSTEM = cfg.update.system;
         NIXMAINT_WORKERS = toString cfg.update.workers;
         NIXMAINT_MAX_MEMORY = toString cfg.update.maxMemory;
+        NIXMAINT_REPOLOGY = lib.boolToString cfg.update.repology;
       };
       serviceConfig = hardening // {
         Type = "oneshot";

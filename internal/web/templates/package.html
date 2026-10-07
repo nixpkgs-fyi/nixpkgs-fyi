@@ -1,4 +1,4 @@
-{{define "content"}}{{$d := .Data}}{{$rev := .Snap.Meta.rev}}
+{{define "content"}}{{$d := .Data}}{{$rev := .Snap.Meta.rev}}{{$meta := .Snap.Meta}}
 <h1>{{$d.Attr}} <small>{{$d.Version}}</small> {{template "badges" $d}}</h1>
 {{with $d.RequestedAttr}}<p class="note">Requested as <code>{{.}}</code>, which evaluates to the same derivation.</p>{{end}}
 {{with $d.Description}}<p class="lead">{{.}}</p>{{end}}
@@ -11,6 +11,14 @@
   {{with $d.MainProgram}}<dt>Main program</dt><dd><code>{{.}}</code></dd>{{end}}
   {{with $d.Position}}<dt>Source</dt><dd>{{with sourceURL $rev .}}<a href="{{.}}">{{$d.Position}}</a>{{else}}{{.}}{{end}}</dd>{{end}}
   <dt>Derivation</dt><dd><code>{{$d.DrvPath}}</code></dd>
+  {{with $meta.repology_fetched_at}}<dt>Repology</dt><dd>
+    {{if $d.Newest}}<span class="outdated">outdated</span>, newest version is <b>{{$d.Newest}}</b>
+    {{else if eq $d.RepologyStatus "newest"}}newest version
+    {{else if $d.RepologyStatus}}{{$d.RepologyStatus}}
+    {{else}}no newer version known{{end}}
+    · {{if $d.RepologyProject}}<a href="https://repology.org/project/{{pathEscape $d.RepologyProject}}/versions">{{$d.RepologyProject}}</a>{{else}}<a href="https://repology.org/tools/project-by?repo={{$meta.repology_repo}}&amp;name_type=srcname&amp;target_page=project_versions&amp;name={{$d.Attr}}">look up</a>{{end}}
+    <small>(as of {{.}})</small>
+  </dd>{{end}}
   {{with $d.Aliases}}<dt>Also available as</dt><dd>{{range $i, $a := .}}{{if $i}}, {{end}}<code>{{$a}}</code>{{end}}</dd>{{end}}
 </dl>
 

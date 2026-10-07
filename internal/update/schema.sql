@@ -6,7 +6,8 @@ CREATE TABLE meta (
   value TEXT NOT NULL
 );
 -- keys: schema_version, rev, channel, system, generated_at (RFC 3339 UTC),
---       eval_seconds, package_count, edge_count, eval_error_count
+--       eval_seconds, package_count, edge_count, eval_error_count,
+--       repology_repo, repology_fetched_at (RFC 3339 UTC; only if Repology data was fetched)
 
 CREATE TABLE packages (
   id                      INTEGER PRIMARY KEY,
@@ -96,3 +97,13 @@ CREATE TABLE eval_errors (
 -- Software without maintainers and teams; setup hooks are left out.
 CREATE VIEW unmaintained_packages AS
   SELECT * FROM packages WHERE maintainer_count = 0 AND team_count = 0 AND setup_hook = 0;
+
+-- Repology (https://repology.org) status of packages in projects Repology
+-- considers outdated in nixpkgs. Packages without a row are up to date or not
+-- tracked. Refreshed on every update, also when the revision did not change.
+CREATE TABLE repology (
+  package_id INTEGER PRIMARY KEY REFERENCES packages(id),
+  project    TEXT NOT NULL,  -- Repology project name
+  status     TEXT NOT NULL,  -- outdated, newest, legacy, ... (Repology package status)
+  newest     TEXT NOT NULL   -- newest version of the project known to Repology
+);

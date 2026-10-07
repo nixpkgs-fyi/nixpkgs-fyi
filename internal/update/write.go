@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	_ "embed"
 	"fmt"
+	"log"
 	"os"
 	"sort"
 	"strconv"
@@ -14,7 +15,7 @@ import (
 
 // SchemaVersion is bumped whenever schema.sql or the meaning of a column
 // changes; a database with a different version is always regenerated.
-const SchemaVersion = "2"
+const SchemaVersion = "3"
 
 //go:embed schema.sql
 var schemaSQL string
@@ -58,8 +59,9 @@ func ReadMeta(path string) map[string]string {
 	return m
 }
 
-// writeDB writes the graph to path+".tmp" and atomically renames it to path.
-func writeDB(path string, g *graph, meta map[string]string, sourceDir string) (err error) {
+// writeDB writes the graph and the Repology data (if any) to path+".tmp" and
+// atomically renames it to path.
+func writeDB(path string, g *graph, rps []repologyPackage, meta map[string]string, sourceDir string) (err error) {
 	tmp := path + ".tmp"
 	_ = os.Remove(tmp)
 	defer func() {
@@ -85,6 +87,13 @@ func writeDB(path string, g *graph, meta map[string]string, sourceDir string) (e
 	defer tx.Rollback()
 	if err := insertAll(tx, g, meta, sourceDir); err != nil {
 		return err
+	}
+	if rps != nil {
+		matched, err := insertRepology(tx, rps)
+		if err != nil {
+			return fmt.Errorf("repology: %w", err)
+		}
+		log.Printf("repology: matched %d packages", matched)
 	}
 	if err := tx.Commit(); err != nil {
 		return err

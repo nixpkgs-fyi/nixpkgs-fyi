@@ -42,6 +42,11 @@ Configuration (environment variables):
   NIXMAINT_SUBSET          Nix function selecting the attribute set to evaluate, for testing
                            (default: pkgs: pkgs)
   NIXMAINT_NIX_EVAL_JOBS   nix-eval-jobs binary (default: nix-eval-jobs)
+  NIXMAINT_REPOLOGY        "0" or "false": do not compare versions with Repology (default: true);
+                           otherwise its data is refreshed on every run, also if the revision is unchanged
+  NIXMAINT_REPOLOGY_URL    Repology API base URL (default: https://repology.org/api/v1)
+  NIXMAINT_REPOLOGY_REPO   Repology repository to compare with
+                           (default: nix_unstable or nix_stable_YY_MM, from NIXMAINT_CHANNEL)
 `
 
 func main() {
@@ -80,6 +85,9 @@ func runUpdate(ctx context.Context) error {
 		Rev:      env("NIXMAINT_REV", ""),
 		Subset:   env("NIXMAINT_SUBSET", "pkgs: pkgs"),
 		EvalJobs: env("NIXMAINT_NIX_EVAL_JOBS", "nix-eval-jobs"),
+
+		RepologyURL:  env("NIXMAINT_REPOLOGY_URL", "https://repology.org/api/v1"),
+		RepologyRepo: env("NIXMAINT_REPOLOGY_REPO", ""),
 	}
 	var err error
 	if o.Workers, err = envInt("NIXMAINT_WORKERS", defaultWorkers); err != nil {
@@ -89,6 +97,9 @@ func runUpdate(ctx context.Context) error {
 		return err
 	}
 	if o.Force, err = envBool("NIXMAINT_FORCE", "false"); err != nil {
+		return err
+	}
+	if o.Repology, err = envBool("NIXMAINT_REPOLOGY", "true"); err != nil {
 		return err
 	}
 	if (o.Nixpkgs == "") != (o.Rev == "") {

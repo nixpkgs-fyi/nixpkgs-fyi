@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"maps"
 	"net/http"
 	"os/exec"
 	"strconv"
@@ -28,10 +29,20 @@ type Options struct {
 	Subset  string // Nix function selecting the package set to evaluate
 
 	EvalJobs string // nix-eval-jobs binary
+
+	Repology     bool   // compare versions with Repology
+	RepologyURL  string // Repology API base URL
+	RepologyRepo string // Repology repository; derived from Channel if empty
 }
 
 func Run(ctx context.Context, o Options) error {
 	start := time.Now()
+	if o.Repology && o.RepologyRepo == "" {
+		var err error
+		if o.RepologyRepo, err = repologyRepo(o.Channel); err != nil {
+			return err
+		}
+	}
 	src, rev := o.Nixpkgs, o.Rev
 	if src == "" {
 		var err error
@@ -42,7 +53,21 @@ func Run(ctx context.Context, o Options) error {
 	}
 	if old := ReadMeta(o.DB); !o.Force && old != nil &&
 		old["rev"] == rev && old["system"] == o.System && old["schema_version"] == SchemaVersion {
-		log.Printf("%s is already up to date (%s), nothing to do", o.DB, rev)
+		if !o.Repology {
+			log.Printf("%s is already up to date (%s), nothing to do", o.DB, rev)
+			return nil
+		}
+		// Upstream releases do not wait for the channel: refresh the
+		// Repology data on its own.
+		log.Printf("%s is already up to date (%s), refreshing Repology data", o.DB, rev)
+		fetched := time.Now()
+		rps, err := fetchRepology(ctx, o.RepologyURL, o.RepologyRepo)
+		if err != nil {
+			return fmt.Errorf("repology: %w", err)
+		}
+		if err := refreshRepology(o.DB, rps, repologyMeta(o.RepologyRepo, fetched)); err != nil {
+			return fmt.Errorf("repology: updating %s: %w", o.DB, err)
+		}
 		return nil
 	}
 	if src == "" {
@@ -76,6 +101,20 @@ func Run(ctx context.Context, o Options) error {
 	g := c.build()
 	log.Printf("graph: %d packages, %d edges in %.1fs", len(g.Pkgs), g.Edges, time.Since(t).Seconds())
 
+	var rps []repologyPackage
+	var repologyMetas map[string]string
+	if o.Repology {
+		// Not fatal: the evaluation is the expensive part, and the next run
+		// refreshes the Repology data even if the revision did not change.
+		fetched := time.Now()
+		if rps, err = fetchRepology(ctx, o.RepologyURL, o.RepologyRepo); err != nil {
+			log.Printf("repology: %v; writing the database without Repology data", err)
+			rps = nil
+		} else {
+			repologyMetas = repologyMeta(o.RepologyRepo, fetched)
+		}
+	}
+
 	t = time.Now()
 	meta := map[string]string{
 		"schema_version":   SchemaVersion,
@@ -91,7 +130,8 @@ func Run(ctx context.Context, o Options) error {
 	if o.Nixpkgs != "" {
 		meta["channel"] = ""
 	}
-	if err := writeDB(o.DB, g, meta, src); err != nil {
+	maps.Copy(meta, repologyMetas)
+	if err := writeDB(o.DB, g, rps, meta, src); err != nil {
 		return fmt.Errorf("writing database: %w", err)
 	}
 	log.Printf("wrote %s in %.1fs (total %.0fs)", o.DB, time.Since(t).Seconds(), time.Since(start).Seconds())

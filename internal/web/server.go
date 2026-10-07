@@ -45,8 +45,8 @@ type snapshot struct {
 }
 
 type stats struct {
-	Packages, Unmaintained, TeamOnly, Single, Broken, Maintainers, Teams int
-	SetupHooks                                                           int // not included in the other counts
+	Packages, Unmaintained, TeamOnly, Single, Broken, Outdated, Maintainers, Teams int
+	SetupHooks                                                                     int // not included in the other counts
 }
 
 type countRow struct {
@@ -174,10 +174,11 @@ func openSnapshot(path string) (_ *snapshot, err error) {
 		COALESCE(SUM(setup_hook = 0 AND direct_maintainer_count = 0 AND team_count > 0), 0),
 		COALESCE(SUM(setup_hook = 0 AND maintainer_count = 1 AND team_count = 0), 0),
 		COALESCE(SUM(setup_hook = 0 AND broken), 0),
+		(SELECT COUNT(*) FROM repology r JOIN packages p ON p.id = r.package_id WHERE r.status = 'outdated' AND p.setup_hook = 0),
 		COALESCE(SUM(setup_hook), 0),
 		(SELECT COUNT(*) FROM maintainers),
 		(SELECT COUNT(*) FROM teams)
-		FROM packages`).Scan(&st.Packages, &st.Unmaintained, &st.TeamOnly, &st.Single, &st.Broken, &st.SetupHooks, &st.Maintainers, &st.Teams)
+		FROM packages`).Scan(&st.Packages, &st.Unmaintained, &st.TeamOnly, &st.Single, &st.Broken, &st.Outdated, &st.SetupHooks, &st.Maintainers, &st.Teams)
 	if err != nil {
 		return nil, err
 	}
