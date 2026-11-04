@@ -31,7 +31,7 @@ Configuration (environment variables):
   NIXMAINT_BANNER          "0" or "false" hides the "built with ❤️ by pinpox" footer (default: true)
 
   update:
-  NIXMAINT_BRANCH          NixOS/nixpkgs branch whose current commit is evaluated (default: master)
+  NIXMAINT_BRANCH          NixOS/nixpkgs branch whose current commit is evaluated (default: staging)
   NIXMAINT_SYSTEM          system to evaluate packages for (default: x86_64-linux)
   NIXMAINT_WORKERS         nix-eval-jobs workers (default: number of CPUs, at most 8)
   NIXMAINT_MAX_MEMORY      memory per nix-eval-jobs worker in MiB (default: 4096)
@@ -79,7 +79,7 @@ func main() {
 func runUpdate(ctx context.Context) error {
 	o := update.Options{
 		DB:       env("NIXMAINT_DB", "nixpkgs.sqlite"),
-		Branch:   env("NIXMAINT_BRANCH", "master"),
+		Branch:   env("NIXMAINT_BRANCH", "staging"),
 		System:   env("NIXMAINT_SYSTEM", "x86_64-linux"),
 		Nixpkgs:  env("NIXMAINT_NIXPKGS", ""),
 		Rev:      env("NIXMAINT_REV", ""),

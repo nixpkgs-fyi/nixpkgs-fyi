@@ -65,7 +65,7 @@ in
       };
       branch = lib.mkOption {
         type = lib.types.str;
-        default = "master";
+        default = "staging";
         example = "nixos-unstable";
         description = "Branch of NixOS/nixpkgs whose current commit is evaluated.";
       };

@@ -2,7 +2,7 @@
 
 Find unmaintained packages in nixpkgs.
 
-`nixmaint update` evaluates the current `master` of nixpkgs with
+`nixmaint update` evaluates the current `staging` of nixpkgs with
 [nix-eval-jobs](https://github.com/nix-community/nix-eval-jobs) and stores all
 packages, their maintainers, teams and dependencies in SQLite. It also asks
 [Repology](https://repology.org) which packages are outdated, i.e. have a newer
@@ -24,7 +24,7 @@ Configuration is done with environment variables (`nixmaint help`):
 | `NIXMAINT_DB`         | `nixpkgs.sqlite`          |
 | `NIXMAINT_LISTEN`     | `127.0.0.1:8787`          |
 | `NIXMAINT_BANNER`     | `true` (credits footer)   |
-| `NIXMAINT_BRANCH`     | `master`                  |
+| `NIXMAINT_BRANCH`     | `staging`                 |
 | `NIXMAINT_SYSTEM`     | `x86_64-linux`            |
 | `NIXMAINT_WORKERS`    | number of CPUs, at most 8 |
 | `NIXMAINT_MAX_MEMORY` | `4096` (MiB per worker)   |
@@ -55,7 +55,7 @@ everything through its API. Packages without Repology data are therefore
 either up to date or not tracked by Repology. A status is only shown if
 Repology saw the same version as the evaluated revision, or the evaluated
 version is the newest one. Repology tracks `nixos-unstable`, so packages
-updated on `master` but not yet in the channel count as newest.
+updated on `staging` but not yet in the channel count as newest.
 
 ## Deployment
 
